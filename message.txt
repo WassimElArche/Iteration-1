@@ -1,0 +1,151 @@
+package testsUnitaires;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.Test;
+
+import personnel.*;
+
+class testLigue {
+	GestionPersonnel gestionPersonnel = GestionPersonnel.getGestionPersonnel();
+	
+	public static void main(String[] args) {
+		// Main method for running tests
+		org.junit.runner.JUnitCore.main("testsUnitaires.testLigue");
+	}
+	
+	@Test
+	void createLigue() throws SauvegardeImpossible {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		assertEquals("Football", ligue.getNom());
+	}
+	
+	void setLigue() throws SauvegardeImpossible {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		ligue.setNom("Tennis");
+	}
+	
+	@Test 
+	void Suppression() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe;
+		employe = ligue.addEmploye("Dupont", "Jean", "jean.dupont@mail.com", "pass123", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		Employe employe1 = ligue.addEmploye("Martin", "Pierre", "pierre.martin@mail.com", "pass456", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1)); 
+		Employe employe2 = ligue.addEmploye("Bernard", "Marie", "marie.bernard@mail.com", "pass789", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1)); 
+		
+		employe.remove();
+		assertFalse(ligue.getEmployes().contains(employe));
+		
+		ligue.remove();
+		assertFalse(gestionPersonnel.getLigues().contains(ligue));
+	}
+	
+	@Test
+	void changementetSuppAdmin() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe admin = ligue.addEmploye("Dubois", "Paul", "paul.dubois@mail.com", "adminPass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		
+		// Vérification administrateur initial
+		assertEquals(gestionPersonnel.getRoot(), ligue.getAdministrateur());
+		
+		// Changement administrateur
+		ligue.setAdministrateur(admin);
+		assertEquals(admin, ligue.getAdministrateur());
+		
+		// Suppression administrateur
+		admin.remove();
+		assertFalse(ligue.getEmployes().contains(admin));
+		
+		// Vérification retour à Root
+		assertFalse(ligue.getEmployes().contains(admin));
+		assertEquals(gestionPersonnel.getRoot(), ligue.getAdministrateur());
+	}
+	
+	@Test
+	void Employe() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe = ligue.addEmploye("Petit", "Sophie", "sophie.petit@mail.com", "empPass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1)); 
+		
+		assertEquals("Sophie", employe.getPrenom());
+		assertEquals("sophie.petit@mail.com", employe.getMail());
+		assertEquals(ligue, employe.getLigue());
+		
+		employe.setMail("sophie.nouvelle@mail.com");
+		assertEquals("sophie.nouvelle@mail.com", employe.getMail());
+		
+		employe.setNom("Martin");
+		assertEquals("Martin", employe.getNom());
+		
+		employe.setPassword("newPass123");
+		assertTrue(employe.checkPassword("newPass123"));
+		
+		employe.setPrenom("Anne");
+		assertEquals("Anne", employe.getPrenom());
+	}
+	
+	@Test
+	void addEmploye() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe = ligue.addEmploye("Moreau", "Thomas", "thomas.moreau@mail.com", "pass321", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		assertEquals(employe, ligue.getEmployes().first());
+	}
+	
+	@Test
+	void testValidDates() throws SauvegardeImpossible {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		assertDoesNotThrow(() -> ligue.addEmploye("Leroy", "Julie", "julie.leroy@mail.com", "datePass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1)));
+	}
+	
+	@Test
+	void testInvalidDates() throws SauvegardeImpossible {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Exception exception = assertThrows(Erreurdate.class, () -> {
+			ligue.addEmploye("Simon", "Marc", "marc.simon@mail.com", "datePass", LocalDate.of(2024, 12, 1), LocalDate.of(2022, 3, 15));
+		});
+		assertEquals("La date de départ est antérieur à la date d'arrivée.", exception.getMessage());
+	}
+	
+	@Test
+	void testDateArriveNull() throws SauvegardeImpossible {
+		Ligue ligue = gestionPersonnel.addLigue("Rugby");
+		Exception exception1 = assertThrows(Erreurdate.class, () -> {
+			ligue.addEmploye("Roux", "Claire", "claire.roux@mail.com", "nullPass", null, LocalDate.of(2022, 3, 15));
+		});
+		assertEquals("La date de départ est antérieur à la date d'arrivée.", exception1.getMessage());
+	}
+	
+	@Test
+	void setDateArriveNull() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Rugby");
+		Employe employe = ligue.addEmploye("Blanc", "Eric", "eric.blanc@mail.com", "testPass", LocalDate.of(2024, 12, 1), LocalDate.of(2022, 3, 15));
+		assertThrows(Erreurdate.class, () -> {
+			employe.setDateArrivee(null);
+		});
+	}
+	
+	@Test
+	void testSetDateDepartInvalid() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe = ligue.addEmploye("Girard", "Luc", "luc.girard@mail.com", "datePass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		Exception exception = assertThrows(Erreurdate.class, () -> employe.setDateDepart(LocalDate.of(2022, 1, 1)));
+		assertEquals("La date de départ est antérieur à la date d'arrivée.", exception.getMessage());
+	}
+	
+	@Test
+	void testSetDateArriveInvalid() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe = ligue.addEmploye("Lambert", "Alice", "alice.lambert@mail.com", "datePass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		Exception erreur = assertThrows(Erreurdate.class, () -> employe.setDateArrivee(LocalDate.of(2024, 12, 2)));
+		assertEquals("La date de départ est antérieur à la date d'arrivée.", erreur.getMessage());
+	}
+	
+	@Test
+	void testGetDate() throws SauvegardeImpossible, Erreurdate {
+		Ligue ligue = gestionPersonnel.addLigue("Football");
+		Employe employe = ligue.addEmploye("Mercier", "Hugo", "hugo.mercier@mail.com", "datePass", LocalDate.of(2022, 3, 15), LocalDate.of(2024, 12, 1));
+		assertEquals(employe.getDateArrivee(), LocalDate.of(2022, 3, 15)); 
+		assertEquals(employe.getDateDepart(), LocalDate.of(2024, 12, 1));
+	}
+}
